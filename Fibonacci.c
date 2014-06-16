@@ -1,10 +1,11 @@
 #include <stdio.h>
+#include <time.h>
 /*exponential time, bad*/
 unsigned long long fib1(int n)
 {
     if (n==0) return 0;
     if (n==1) return 1;
-    return fib(n-2)+fib(n-1);
+    return fib1(n-2)+fib1(n-1);
 }
 /*O(n) time, O(1) space, good*/
 unsigned long long fib2(int n)
@@ -29,13 +30,68 @@ unsigned long long fib3(int n)
     }
     return f[1];
 }
+struct matrix2x2 {
+    unsigned long long d[2][2];
+};
+static struct matrix2x2 matrix2x2mul(struct matrix2x2 m, struct matrix2x2 n)
+{
+    struct matrix2x2 r;
+    r.d[0][0] = m.d[0][0] * n.d[0][0] + m.d[0][1] * n.d[1][0];
+    r.d[0][1] = m.d[0][0] * n.d[0][1] + m.d[0][1] * n.d[1][1];
+    r.d[1][0] = m.d[1][0] * n.d[0][0] + m.d[1][1] * n.d[1][0];
+    r.d[1][1] = m.d[1][0] * n.d[0][1] + m.d[1][1] * n.d[1][1];
+    return r;
+}
+static struct matrix2x2 fibpow(int n)
+{
+    
+    static struct matrix2x2 u = {.d[0][0]=1, .d[0][1]=1, .d[1][0]=1, .d[1][1]=0};
+    struct matrix2x2 r;
+    if (1==n) return u;
+    if (n%2==0) {
+        r = fibpow(n/2);
+        r = matrix2x2mul(r, r);
+    } else {
+        r = fibpow((n-1)/2);
+        r = matrix2x2mul(r, r);
+        r = matrix2x2mul(r, u);
+    }
+    return r;
+}
+/*O(lgn) time, O(1) space, best*/
+unsigned long long fib4(int n)
+{
+    struct matrix2x2 r;
+    unsigned long long f[2] = {0, 1};
+    if (n<2) return f[n];
+    r = fibpow(n-1);
+    return r.d[0][0];
+}
 int main(void)
 {
     int n;
+	struct timespec t1, t2;
+    unsigned long long r;
+    printf("Fibonacci? ");
     while (scanf("%d", &n)==1) {
-        printf("fib3(%d)=%llu\n", n, fib3(n));
-        printf("fib2(%d)=%llu\n", n, fib2(n));
-        printf("fib1(%d)=%llu\n", n, fib1(n));
+        printf("\n");
+        clock_gettime(CLOCK_MONOTONIC, &t1);
+        r = fib4(n);
+        clock_gettime(CLOCK_MONOTONIC, &t2);
+        printf("fib4(%d)=%llu t=%lus %luns\n", n, r, (t2.tv_sec-t1.tv_sec), (t2.tv_nsec-t1.tv_nsec));
+        clock_gettime(CLOCK_MONOTONIC, &t1);
+        r = fib3(n);
+        clock_gettime(CLOCK_MONOTONIC, &t2);
+        printf("fib3(%d)=%llu t=%lus %luns\n", n, r, (t2.tv_sec-t1.tv_sec), (t2.tv_nsec-t1.tv_nsec));
+        clock_gettime(CLOCK_MONOTONIC, &t1);
+        r = fib2(n);
+        clock_gettime(CLOCK_MONOTONIC, &t2);
+        printf("fib2(%d)=%llu t=%lus %luns\n", n, r, (t2.tv_sec-t1.tv_sec), (t2.tv_nsec-t1.tv_nsec));
+        clock_gettime(CLOCK_MONOTONIC, &t1);
+        r = fib1(n);
+        clock_gettime(CLOCK_MONOTONIC, &t2);
+        printf("fib1(%d)=%llu t=%lus %luns\n", n, r, (t2.tv_sec-t1.tv_sec), (t2.tv_nsec-t1.tv_nsec));
+        printf("\nFibonacci? ");
     }
     return 0;
 }
