@@ -70,7 +70,7 @@ unsigned long long fib4(int n)
 int main(void)
 {
     int n;
-	struct timespec t1, t2;
+    struct timespec t1, t2;
     unsigned long long r;
     printf("Fibonacci? ");
     while (scanf("%d", &n)==1) {
