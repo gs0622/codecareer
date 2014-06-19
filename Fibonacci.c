@@ -1,3 +1,4 @@
+/*gcc -Wl,--no-as-needed,-lrt Fibonacci.c*/
 #include <stdio.h>
 #include <time.h>
 /*exponential time, bad*/
@@ -87,10 +88,10 @@ int main(void)
         r = fib2(n);
         clock_gettime(CLOCK_MONOTONIC, &t2);
         printf("fib2(%d)=%llu t=%lus %luns\n", n, r, (t2.tv_sec-t1.tv_sec), (t2.tv_nsec-t1.tv_nsec));
-        clock_gettime(CLOCK_MONOTONIC, &t1);
+        /*clock_gettime(CLOCK_MONOTONIC, &t1);
         r = fib1(n);
         clock_gettime(CLOCK_MONOTONIC, &t2);
-        printf("fib1(%d)=%llu t=%lus %luns\n", n, r, (t2.tv_sec-t1.tv_sec), (t2.tv_nsec-t1.tv_nsec));
+        printf("fib1(%d)=%llu t=%lus %luns\n", n, r, (t2.tv_sec-t1.tv_sec), (t2.tv_nsec-t1.tv_nsec));*/
         printf("\nFibonacci? ");
     }
     return 0;
