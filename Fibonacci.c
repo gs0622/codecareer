@@ -45,7 +45,6 @@ static struct matrix2x2 matrix2x2mul(struct matrix2x2 m, struct matrix2x2 n)
 }
 static struct matrix2x2 fibpow(int n)
 {
-    
     static struct matrix2x2 u = {.d[0][0]=1, .d[0][1]=1, .d[1][0]=1, .d[1][1]=0};
     struct matrix2x2 r;
     if (1==n) return u;
@@ -70,6 +69,64 @@ unsigned long long fib4(int n)
 }
 void m2x2mul(struct matrix2x2 *r, struct matrix2x2 const * const m, struct matrix2x2 const * const n)
 {
+#if 1 /*AVX2 by YT*/
+    __asm__ volatile (
+        "vmovdqu    (%rsi), %ymm14\r\n"
+        "mov        $1, %rax\r\n"
+        "test       %rdx, %rdx\r\n"
+        "movq       %rax, %xmm15\r\n"
+        "vpermq     $0b01000001, %ymm15, %ymm15\r\n"
+        "je         0f\r\n"
+        "1:\r\n"
+        "shr        $1, %rdx\r\n"
+        "jae        2f\r\n"
+        "vpermq     $0b01000100, %ymm15, %ymm0\r\n"
+        "vpermq     $0b10001000, %ymm14, %ymm1\r\n"
+        "vpermq     $0b11101110, %ymm15, %ymm2\r\n"
+        "vpermq     $0b11011101, %ymm14, %ymm3\r\n"
+        "vpsrldq    $4, %ymm0, %ymm4\r\n"
+        "vpsrldq    $4, %ymm1, %ymm5\r\n"
+        "vpmuludq   %ymm1, %ymm4, %ymm8\r\n"
+        "vpsrldq    $4, %ymm2, %ymm6\r\n"
+        "vpsrldq    $4, %ymm3, %ymm7\r\n"
+        "vpmuludq   %ymm0, %ymm5, %ymm9\r\n"
+        "vpmuludq   %ymm3, %ymm6, %ymm10\r\n"
+        "vpmuludq   %ymm2, %ymm7, %ymm11\r\n"
+        "vpmuludq   %ymm0, %ymm1, %ymm0\r\n"
+        "vpmuludq   %ymm2, %ymm3, %ymm2\r\n"
+        "vpaddq     %ymm8, %ymm9, %ymm8\r\n"
+        "vpaddq     %ymm10, %ymm11, %ymm10\r\n"
+        "vpaddq     %ymm8, %ymm10, %ymm8\r\n"
+        "vpsllq     $32, %ymm8, %ymm1\r\n"
+        "vpaddq     %ymm0, %ymm2, %ymm0\r\n"
+        "vpaddq     %ymm0, %ymm1, %ymm15\r\n"
+        "je         0f\r\n"
+        "2:\r\n"
+        "vpermq     $0b01000100, %ymm14, %ymm0\r\n"
+        "vpermq     $0b10001000, %ymm14, %ymm1\r\n"
+        "vpermq     $0b11101110, %ymm14, %ymm2\r\n"
+        "vpermq     $0b11011101, %ymm14, %ymm3\r\n"
+        "vpsrldq    $4, %ymm0, %ymm4\r\n"
+        "vpsrldq    $4, %ymm1, %ymm5\r\n"
+        "vpmuludq   %ymm1, %ymm4, %ymm8\r\n"
+        "vpsrldq    $4, %ymm2, %ymm6\r\n"
+        "vpsrldq    $4, %ymm3, %ymm7\r\n"
+        "vpmuludq   %ymm0, %ymm5, %ymm9\r\n"
+        "vpmuludq   %ymm3, %ymm6, %ymm10\r\n"
+        "vpmuludq   %ymm2, %ymm7, %ymm11\r\n"
+        "vpmuludq   %ymm0, %ymm1, %ymm0\r\n"
+        "vpmuludq   %ymm2, %ymm3, %ymm2\r\n"
+        "vpaddq     %ymm8, %ymm9, %ymm8\r\n"
+        "vpaddq     %ymm10, %ymm11, %ymm10\r\n"
+        "vpaddq     %ymm8, %ymm10, %ymm8\r\n"
+        "vpsllq     $32, %ymm8, %ymm1\r\n"
+        "vpaddq     %ymm0, %ymm2, %ymm0\r\n"
+        "vpaddq     %ymm0, %ymm1, %ymm14\r\n"
+        "jmp        1b\r\n"
+        "0:\r\n"
+        "vmovdqu    %ymm15, (%rdi)\r\n"
+    );
+#else /*AVX by YT*/
     __asm__ volatile (
         "movdqu     (%rdx), %xmm0\r\n"
         "movddup    (%rsi), %xmm4\r\n"
@@ -112,11 +169,11 @@ void m2x2mul(struct matrix2x2 *r, struct matrix2x2 const * const m, struct matri
         "movdqu     %xmm0, (%rdi)\r\n"
         "movdqu     %xmm1, 16(%rdi)\r\n"
     );
+#endif
 }
 
 static struct matrix2x2 fibpow2(int n)
 {
-    
     static struct matrix2x2 u = {.d[0][0]=1, .d[0][1]=1, .d[1][0]=1, .d[1][1]=0};
     struct matrix2x2 r;
     if (1==n) return u;
