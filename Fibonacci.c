@@ -279,7 +279,6 @@ void m2x2pow_avx2(struct matrix2x2 *r, struct matrix2x2 const * const m, const u
         "jmp        1b\r\n"
         "0:\r\n"
         "vmovdqu    %ymm15, (%rdi)\r\n"
-        "retq\r\n"
     );
 }
 static struct matrix2x2 fibpow4(int n)
