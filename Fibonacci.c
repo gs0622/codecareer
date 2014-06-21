@@ -222,6 +222,83 @@ unsigned long long fib6(int n)
     r = fibpow3(n-1);
     return r.d[0][0];
 }
+void m2x2pow_avx2(struct matrix2x2 *r, struct matrix2x2 const * const m, const unsigned long long powN)
+{
+    __asm__ volatile (
+        "vmovdqu    (%rsi), %ymm14\r\n"         /*	src	*/
+        "mov        $1, %rax\r\n"
+        "test       %rdx, %rdx\r\n"
+        "movq       %rax, %xmm15\r\n"
+        "vpermq     $0b01000001, %ymm15, %ymm15\r\n"    /*	identity matrix	*/
+        "je         0f\r\n"
+        "1:\r\n"
+        "shr        $1, %rdx\r\n"
+        "jae        2f\r\n"                     /*	not required to update result with current src^n	*/
+        "vpermq     $0b01000100, %ymm15, %ymm0\r\n" /*	{y, x, y, x}	*/
+        "vpermq     $0b10001000, %ymm14, %ymm1\r\n" /*	{c, c, a, a}	*/
+        "vpermq     $0b11101110, %ymm15, %ymm2\r\n" /*	{w, z, w, z}	*/
+        "vpermq     $0b11011101, %ymm14, %ymm3\r\n" /*	{d, d, b, b}	*/
+        "vpsrldq    $4, %ymm0, %ymm4\r\n"       /*	{y>>32, x>>32, y>>32, x>>32}	*/
+        "vpsrldq    $4, %ymm1, %ymm5\r\n"       /*	{c>>32, c>>32, a>>32, a>>32}	*/
+        "vpmuludq   %ymm1, %ymm4, %ymm8\r\n"    /*	{cy>>32, cx>>32, ay>>32, ax>>32}	*/
+        "vpsrldq    $4, %ymm2, %ymm6\r\n"       /*	{w>>32, z>>32, w>>32, z>>32}	*/
+        "vpsrldq    $4, %ymm3, %ymm7\r\n"       /*	{d>>32, d>>32, b>>32, b>>32}	*/
+        "vpmuludq   %ymm0, %ymm5, %ymm9\r\n"    /*	{(c>>32)y, (c>>32)x, (a>>32)y, (a>>32)x}	*/
+        "vpmuludq   %ymm3, %ymm6, %ymm10\r\n"   /*	{dw>>32, dz>>32, bw>>32, bz>>32}	*/
+        "vpmuludq   %ymm2, %ymm7, %ymm11\r\n"   /*	{(d>>32)w, (d>>32)z, (b>>32)w, (b>>32)z}	*/
+        "vpmuludq   %ymm0, %ymm1, %ymm0\r\n"    /*	low 64bit {cy, cx, ay, ax}	*/
+        "vpmuludq   %ymm2, %ymm3, %ymm2\r\n"    /*	low 64bit {dw, dz, bw, bz}	*/
+        "vpaddq     %ymm8, %ymm9, %ymm8\r\n"    /*	middle 64bit {cy, cx, ay, ax}	*/
+        "vpaddq     %ymm10, %ymm11, %ymm10\r\n" /*	middle 64bit {dw, dz, bw, bz}	*/
+        "vpaddq     %ymm8, %ymm10, %ymm8\r\n"   /*	middle 64bit {cy+dw, cx+dz, ay+bw, ax+bz}	*/
+        "vpsllq     $32, %ymm8, %ymm1\r\n"  /*	low part of middle 64bit {cy+dw, cx+dz, ay+bw, ax+bz}	*/
+        "vpaddq     %ymm0, %ymm2, %ymm0\r\n"    /*	low 64bit {cy+dw, cx+dz, ay+bw, ax+bz}	*/
+        "vpaddq     %ymm0, %ymm1, %ymm15\r\n"
+        "je         0f\r\n"                     /*	no more power to do	*/
+        "2:\r\n"
+        "vpermq     $0b01000100, %ymm14, %ymm0\r\n" /*	{y, x, y, x}	*/
+        "vpermq     $0b10001000, %ymm14, %ymm1\r\n" /*	{c, c, a, a}	*/
+        "vpermq     $0b11101110, %ymm14, %ymm2\r\n" /*	{w, z, w, z}	*/
+        "vpermq     $0b11011101, %ymm14, %ymm3\r\n" /*	{d, d, b, b}	*/
+        "vpsrldq    $4, %ymm0, %ymm4\r\n"   /*	{y>>32, x>>32, y>>32, x>>32}	*/
+        "vpsrldq    $4, %ymm1, %ymm5\r\n"       /*	{c>>32, c>>32, a>>32, a>>32}	*/
+        "vpmuludq   %ymm1, %ymm4, %ymm8\r\n"    /*	{cy>>32, cx>>32, ay>>32, ax>>32}	*/
+        "vpsrldq    $4, %ymm2, %ymm6\r\n"       /*	{w>>32, z>>32, w>>32, z>>32}	*/
+        "vpsrldq    $4, %ymm3, %ymm7\r\n"       /*	{d>>32, d>>32, b>>32, b>>32}	*/
+        "vpmuludq   %ymm0, %ymm5, %ymm9\r\n"    /*	{(c>>32)y, (c>>32)x, (a>>32)y, (a>>32)x}	*/
+        "vpmuludq   %ymm3, %ymm6, %ymm10\r\n"   /*	{dw>>32, dz>>32, bw>>32, bz>>32}	*/
+        "vpmuludq   %ymm2, %ymm7, %ymm11\r\n"   /*	{(d>>32)w, (d>>32)z, (b>>32)w, (b>>32)z}	*/
+        "vpmuludq   %ymm0, %ymm1, %ymm0\r\n"    /*	low 64bit {cy, cx, ay, ax}	*/
+        "vpmuludq   %ymm2, %ymm3, %ymm2\r\n"    /*	low 64bit {dw, dz, bw, bz}	*/
+        "vpaddq     %ymm8, %ymm9, %ymm8\r\n"    /*	middle 64bit {cy, cx, ay, ax}	*/
+        "vpaddq     %ymm10, %ymm11, %ymm10\r\n" /*	middle 64bit {dw, dz, bw, bz}	*/
+        "vpaddq     %ymm8, %ymm10, %ymm8\r\n"   /*	middle 64bit {cy+dw, cx+dz, ay+bw, ax+bz}	*/
+        "vpsllq     $32, %ymm8, %ymm1\r\n"      /*	low part of middle 64bit {cy+dw, cx+dz, ay+bw, ax+bz}	*/
+        "vpaddq     %ymm0, %ymm2, %ymm0\r\n"    /*	low 64bit {cy+dw, cx+dz, ay+bw, ax+bz}	*/
+        "vpaddq     %ymm0, %ymm1, %ymm14\r\n"
+        "jmp        1b\r\n"
+        "0:\r\n"
+        "vmovdqu    %ymm15, (%rdi)\r\n"
+        "retq\r\n"
+    );
+}
+static struct matrix2x2 fibpow4(int n)
+{
+    static struct matrix2x2 u = {.d[0][0]=1, .d[0][1]=1, .d[1][0]=1, .d[1][1]=0};
+    struct matrix2x2 r;
+    if (1==n) return u;
+    m2x2pow_avx2(&r, &u, (unsigned long long)n);
+    return r;
+}
+/*O(lgn) time, O(1) space, best*/
+unsigned long long fib7(int n)
+{
+    struct matrix2x2 r;
+    unsigned long long f[2] = {0, 1};
+    if (n<2) return f[n];
+    r = fibpow4(n-1);
+    return r.d[0][0];
+}
 int main(void)
 {
     int n;
@@ -230,6 +307,10 @@ int main(void)
     printf("Fibonacci? ");
     while (scanf("%d", &n)==1) {
         printf("\n");
+        clock_gettime(CLOCK_MONOTONIC, &t1);
+        r = fib7(n);
+        clock_gettime(CLOCK_MONOTONIC, &t2);
+        printf("fib7(%d)=%llu t=%lus %luns\n", n, r, (t2.tv_sec-t1.tv_sec), (t2.tv_nsec-t1.tv_nsec));
         clock_gettime(CLOCK_MONOTONIC, &t1);
         r = fib6(n);
         clock_gettime(CLOCK_MONOTONIC, &t2);
