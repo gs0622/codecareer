@@ -43,7 +43,32 @@ static struct matrix2x2 matrix2x2mul(struct matrix2x2 m, struct matrix2x2 n)
     r.d[1][1] = m.d[1][0] * n.d[0][1] + m.d[1][1] * n.d[1][1];
     return r;
 }
-void m2x2mul(struct matrix2x2 *r, struct matrix2x2 *m, struct matrix2x2 *n)
+static struct matrix2x2 fibpow(int n)
+{
+    
+    static struct matrix2x2 u = {.d[0][0]=1, .d[0][1]=1, .d[1][0]=1, .d[1][1]=0};
+    struct matrix2x2 r;
+    if (1==n) return u;
+    if (n%2==0) {
+        r = fibpow(n/2);
+        r = matrix2x2mul(r, r);
+    } else {
+        r = fibpow((n-1)/2);
+        r = matrix2x2mul(r, r);
+        r = matrix2x2mul(r, u);
+    }
+    return r;
+}
+/*O(lgn) time, O(1) space, best*/
+unsigned long long fib4(int n)
+{
+    struct matrix2x2 r;
+    unsigned long long f[2] = {0, 1};
+    if (n<2) return f[n];
+    r = fibpow(n-1);
+    return r.d[0][0];
+}
+void m2x2mul(struct matrix2x2 *r, struct matrix2x2 const * const m, struct matrix2x2 const * const n)
 {
     __asm__ volatile (
         "movdqu     (%rdx), %xmm0\r\n"
@@ -88,32 +113,10 @@ void m2x2mul(struct matrix2x2 *r, struct matrix2x2 *m, struct matrix2x2 *n)
         "movdqu     %xmm1, 16(%rdi)\r\n"
     );
 }
-static struct matrix2x2 fibpow(int n)
-{
-    static struct matrix2x2 u = {.d[0][0]=1, .d[0][1]=1, .d[1][0]=1, .d[1][1]=0};
-    struct matrix2x2 r;
-    if (1==n) return u;
-    if (n%2==0) {
-        r = fibpow(n/2);
-        r = matrix2x2mul(r, r);
-    } else {
-        r = fibpow((n-1)/2);
-        r = matrix2x2mul(r, r);
-        r = matrix2x2mul(r, u);
-    }
-    return r;
-}
-/*O(lgn) time, O(1) space, best*/
-unsigned long long fib4(int n)
-{
-    struct matrix2x2 r;
-    unsigned long long f[2] = {0, 1};
-    if (n<2) return f[n];
-    r = fibpow(n-1);
-    return r.d[0][0];
-}
+
 static struct matrix2x2 fibpow2(int n)
 {
+    
     static struct matrix2x2 u = {.d[0][0]=1, .d[0][1]=1, .d[1][0]=1, .d[1][1]=0};
     struct matrix2x2 r;
     if (1==n) return u;
