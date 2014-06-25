@@ -6,6 +6,17 @@
 int main(int argc, char **argv)
 {
 #if 1 /*DP*/
+#if 1 /*DP, version-2, time: O(n), space: O(1)*/
+    int i, max, data[100]={}, sum, n=argc-1;
+    if (0==n) return 0;
+    assert(n<100);
+    for (i=1;i<argc;i++) data[i-1]=atoi(argv[i]);
+    for (i=0,sum=0;i<n;i++) {
+        sum=MAX(0, sum+data[i]);
+        max=MAX(sum, max);
+    }
+    printf("max=%d\n", max);
+#else /*DP, version-1, time: O(n), space: O(n)*/
     int i, max, data[100]={}, dp[100]={}, n=argc-1;
     if (0==n) return 0;
     assert(n<100);
@@ -16,12 +27,12 @@ int main(int argc, char **argv)
     //for (i=0;i<n;i++) printf("%3d ", dp[i]);
     for (i=1, max=dp[0];i<n;i++) max = MAX(dp[i], max);
     printf("max=%d\n", max);
-#else /*Brute force*/
+#endif
+#else /*Brute force, time: O(n^3)*/
     int i, j, k, sum=0, max=0, n = argc-1, data[100];
     if (!n) return 0;
     for (i=1;i<argc;i++) data[i-1]=atoi(argv[i]);
     //for (i=0;i<n;i++) printf("%d ", data[i]); puts("");
-    printf("\n");
     for (i=0;i<n;i++) {
         for (j=1;j<=n;j++) {
             for (sum=0,k=i;k<i+j&&k<n;k++) {
