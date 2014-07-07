@@ -9,7 +9,7 @@
         neg = (arr[i]<0)? 1: 0; /*is negative*/
         cnt += neg? 1: 0; /*total neg count*/
         mul *= arr[i];
-        if (1==cnt && neg) tmp = arr[i]; /*remember 1st neg*/
+        if (1==cnt && neg) tmp = mul; /*remember 1st neg mul*/
         max = (0==cnt%2)? MAX(max, mul): MAX(max, mul/tmp);
     }
     return max;
