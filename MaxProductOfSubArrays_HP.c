@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
-#define MAX(a,b)    ((a)>(b)?(a):(b))long MaxProductSeq(const long arr[], long sz)
+#define MAX(a,b)    ((a)>(b)?(a):(b))
+long MaxProductSeq(const long arr[], long sz)
 {
     long i, max, neg, cnt, mul, tmp;
     if (sz<=0) return 0;
